@@ -1,0 +1,30 @@
+{
+  "type": "module",
+  "name": "pintrest",
+  "version": "1.0.0",
+  "license": "ISC",
+  "author": "",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "tsx watch ./src/server.ts",
+    "db": "mongod --dbpath \"C:\\data\\db\" "
+  },
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "helmet": "^8.2.0",
+    "hpp": "^0.2.3",
+    "mongoose": "^9.7.0",
+    "morgan": "^1.11.0",
+    "nodemailer": "^8.0.11",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "eslint": "^8.57.1",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.6",
+    "prettier": "^3.8.4"
+  }
+}
