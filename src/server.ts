@@ -4,7 +4,7 @@ import express from 'express';
 import mongoose from 'mongoose';
 import app from './app';
 const db = process.env.DATABASE_LOCAL;
-const port = process.env.PORT;
+const port = process.env.PORT || 3000;
 
 // Connect to database
 try {
