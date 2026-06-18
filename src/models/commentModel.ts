@@ -1,5 +1,4 @@
 import mongoose from 'mongoose';
-import { maxLength } from 'zod';
 
 const commentSchema = new mongoose.Schema({
   text: {
@@ -15,7 +14,10 @@ const commentSchema = new mongoose.Schema({
   },
   createdAt: {
     type: Date,
-    default: Date.now(),
+    default: Date.now,
+    // Date.now() return the timestamp created now
+    // but date.now is called when the document is created
+    // required: [true, 'a comment must have a creation date'],
   },
   likedBy: [
     {

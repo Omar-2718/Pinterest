@@ -35,3 +35,5 @@ const boardSchema = new mongoose.Schema(
 boardSchema.pre(/^find/, function (this: Query<any, any>) {
   this.populate('createdBy', 'name avatar');
 });
+
+export const Board = mongoose.model('Board', boardSchema);

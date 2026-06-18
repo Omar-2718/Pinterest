@@ -47,6 +47,14 @@ const handleJWTError = (err: any) => {
 const handleJWTExpiredError = (err: any) => {
   return new AppError('Your token has expired! please log in again', 401);
 };
+const handleZodError = (err: any) => {
+  // Extract the specific error messages from Zod's issue array
+  const errors = err.issues.map(
+    (issue: any) => `${issue.path[issue.path.length - 1]}: ${issue.message}`
+  );
+  const message = `Invalid input data. ${errors.join('. ')}`;
+  return new AppError(message, 400);
+};
 export default (err: any, req: Request, res: Response, next: NextFunction) => {
   // console.log(err.stack);
   err.statusCode = err.statusCode || 500;
@@ -54,7 +62,7 @@ export default (err: any, req: Request, res: Response, next: NextFunction) => {
 
   if (process.env.NODE_ENV === 'development') {
     sendErrorDev(err, res);
-  } else if (process.env.NODE_ENV === 'production') {
+  } else {
     // this is a shallow copy
     if (err.name === 'CastError') {
       sendErrorProd(handleCastErrorDB(err), res);
@@ -74,6 +82,10 @@ export default (err: any, req: Request, res: Response, next: NextFunction) => {
     }
     if (err.name === 'TokenExpiredError') {
       sendErrorProd(handleJWTExpiredError(err), res);
+      return;
+    }
+    if (err.name === 'ZodError') {
+      sendErrorProd(handleZodError(err), res);
       return;
     }
     sendErrorProd(err, res);
