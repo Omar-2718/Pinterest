@@ -1,10 +1,13 @@
-import mongoose, { Query } from 'mongoose';
+import mongoose, { Document, Query } from 'mongoose';
 
-export interface Board {
+export interface IBoard extends Document {
   name: string;
-  description: string;
-  secret: boolean;
+  description?: string;
+  secret?: boolean;
+  createdBy: mongoose.Schema.Types.ObjectId;
+  pins: mongoose.Schema.Types.ObjectId[];
 }
+
 const boardSchema = new mongoose.Schema(
   {
     name: {
@@ -32,8 +35,8 @@ const boardSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-boardSchema.pre(/^find/, function (this: Query<any, any>) {
+boardSchema.pre(/^find/, function (this: Query<any, IBoard>) {
   this.populate('createdBy', 'name avatar');
 });
 
-export const Board = mongoose.model('Board', boardSchema);
+export const Board = mongoose.model<IBoard>('Board', boardSchema);

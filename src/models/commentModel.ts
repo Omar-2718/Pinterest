@@ -1,4 +1,12 @@
 import mongoose from 'mongoose';
+import { Document } from 'mongoose';
+
+export interface IComment extends Document {
+  text: string;
+  madeBy: mongoose.Schema.Types.ObjectId;
+  createdAt: Date;
+  likedBy: mongoose.Schema.Types.ObjectId[];
+}
 
 const commentSchema = new mongoose.Schema({
   text: {
@@ -27,4 +35,4 @@ const commentSchema = new mongoose.Schema({
   ],
 });
 
-export const Comment = mongoose.model('Comment', commentSchema);
+export const Comment = mongoose.model<IComment>('Comment', commentSchema);
