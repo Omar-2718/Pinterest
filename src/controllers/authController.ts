@@ -1,30 +1,42 @@
 import { NextFunction, Request, Response } from 'express';
 import { SignupInput, LoginInput } from './../schemas/userSchema';
 
-import { User } from '../models/userModel';
+import { IUser, User } from '../models/userModel';
 import jwt from 'jsonwebtoken';
 import AppError from '../utils/appError';
 import { AuthRequest } from '../types/express';
 
-const signAccessToken = (id: string) => {
-  return jwt.sign({ id }, process.env.ACCESS_TOKEN_SECRET as string, {
-    expiresIn: Number(process.env.ACCESS_TOKEN_EXPIRES_IN),
-  });
+const signAccessToken = (user: IUser) => {
+  return jwt.sign(
+    { id: user._id.toString(), email: user.email, role: user.role },
+    process.env.ACCESS_TOKEN_SECRET as string,
+    {
+      expiresIn: Number(process.env.ACCESS_TOKEN_EXPIRES_IN),
+    }
+  );
 };
 
-const signRefreshToken = (id: string) => {
-  return jwt.sign({ id }, process.env.REFRESH_TOKEN_SECRET as string, {
-    expiresIn: Number(process.env.REFRESH_TOKEN_EXPIRES_IN),
-  });
+const signRefreshToken = (user: IUser) => {
+  return jwt.sign(
+    { id: user._id.toString(), email: user.email, role: user.role },
+    process.env.REFRESH_TOKEN_SECRET as string,
+    {
+      expiresIn: Number(process.env.REFRESH_TOKEN_EXPIRES_IN),
+    }
+  );
 };
 
-const createTokenAndSendResponse = (user: any, statusCode: number, res: Response) => {
-  const refreshToken = signRefreshToken(user.id);
-  const accessToken = signAccessToken(user.id);
+const createTokenAndSendResponse = async (
+  user: IUser,
+  statusCode: number,
+  res: Response
+) => {
+  const refreshToken = signRefreshToken(user);
+  const accessToken = signAccessToken(user);
 
   // save refresh token
   user.refreshToken.push(refreshToken);
-  user.save({ validateBeforeSave: false });
+  await user.save({ validateBeforeSave: false });
 
   // save cookie
   res.cookie('refreshToken', refreshToken, {
@@ -39,7 +51,7 @@ const createTokenAndSendResponse = (user: any, statusCode: number, res: Response
   // user.refreshToken = [];
 
   res.status(statusCode).json({
-    status: 'sucess',
+    status: 'success',
     accessToken,
     data: user,
   });
@@ -50,9 +62,9 @@ export const signup = async (
   res: Response,
   next: NextFunction
 ) => {
-  const { avatar, email, name, password, role } = req.body;
+  const { avatar, email, name, password } = req.body;
   const newUser = await User.create({ avatar, email, name, password });
-  createTokenAndSendResponse(newUser, 201, res);
+  await createTokenAndSendResponse(newUser, 201, res);
 };
 
 export const login = async (
@@ -63,7 +75,6 @@ export const login = async (
   const { email, password } = req.body;
 
   const user = await User.findOne({ email }).select('+password');
-
   if (!user || !user.password || !(await user.correctPassword(password, user.password))) {
     res.status(401).json({
       status: 'fail',
@@ -71,7 +82,7 @@ export const login = async (
     });
     return;
   }
-  createTokenAndSendResponse(user, 200, res);
+  await createTokenAndSendResponse(user, 200, res);
 };
 
 export const protect = async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -86,7 +97,7 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
       token,
       process.env.ACCESS_TOKEN_SECRET as string
     ) as jwt.JwtPayload;
-    req.user = { id: decoded.id };
+    req.user = { id: decoded.id, role: decoded.role, email: decoded.email };
     next();
   } catch (err) {
     return next(new AppError('Token invalid or expired', 403));
@@ -113,7 +124,7 @@ export const refresh = async (req: Request, res: Response, next: NextFunction) =
       return next(new AppError('Session revoked or user no longer exsists', 403));
     }
 
-    const newAccessToken = signAccessToken(user.id);
+    const newAccessToken = signAccessToken(user);
 
     res.status(200).json({
       status: 'success',

@@ -4,17 +4,16 @@ import AppError from './utils/appError';
 import globalErrorHandler from './controllers/errorController';
 import userRouter from './routes/userRoutes';
 import morgan from 'morgan';
-import mongoSanitize from 'express-mongo-sanitize';
+// import mongoSanitize from 'express-mongo-sanitize';
 import rateLimit from 'express-rate-limit';
 import hpp from 'hpp';
 import cookieParser from 'cookie-parser';
-
+import mongoose from 'mongoose';
 const app = express();
 
 // Security
 app.use(helmet());
 app.use(express.json({ limit: '10kb' }));
-app.use(mongoSanitize());
 app.use(hpp());
 // app.use(cors({
 //   origin: 'http://localhost:3000', // Replace with production frontend URL
@@ -30,14 +29,17 @@ app.use(
 
 app.use(cookieParser());
 
-app.use(express.json());
-
 app.use(morgan('dev'));
+
+// app.use(mongoSanitize()); old and unmaintained package
+mongoose.set('sanitizeFilter', true);
 
 app.use('/api/v1/users', userRouter);
 
-app.use(globalErrorHandler);
 app.all('/{*any}', (req, res, next) => {
+  console.log('hello');
   next(new AppError(`Can't find ${req.originalUrl} on the server`, 404));
 });
+
+app.use(globalErrorHandler);
 export default app;

@@ -57,6 +57,8 @@ const handleZodError = (err: any) => {
 };
 export default (err: any, req: Request, res: Response, next: NextFunction) => {
   // console.log(err.stack);
+  console.log(err);
+
   err.statusCode = err.statusCode || 500;
   err.status = err.status || 'error';
 

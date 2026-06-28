@@ -38,6 +38,7 @@ const userSchema = new mongoose.Schema<IUser>(
     },
     role: {
       type: String,
+      default: 'user',
       enum: ['user', 'admin'],
     },
     password: {
@@ -88,7 +89,8 @@ userSchema.pre('save', async function () {
 });
 
 userSchema.pre(/^find/, function (this: Query<any, any>) {
-  this.find({ active: { $ne: false } });
+  // because sanitzer removes it to protect against NoSQL injection
+  this.find({ active: mongoose.trusted({ $ne: false }) });
 });
 
 export const User = mongoose.model<IUser>('User', userSchema);
