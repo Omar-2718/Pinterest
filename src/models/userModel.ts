@@ -1,19 +1,20 @@
-import mongoose, { Document, Query } from 'mongoose';
+import mongoose, { Document, Query, Schema, Types } from 'mongoose';
 import validator from 'validator';
 import bcrypt from 'bcrypt';
-import { string } from 'zod';
 
 export interface IUser extends Document {
   name: string;
   email: string;
   avatar: string;
   role?: 'user' | 'admin';
+  followers: Types.ObjectId[];
+  followings: Types.ObjectId[];
   password?: string;
   passwordResetToken?: string;
   passwordResetExpires?: Date;
   passwordLastChangedAt?: Date;
   active: boolean;
-  refreshToken: string[];
+  refreshTokens: string[];
   correctPassword(candidatePassword: string, correctPassword: string): Promise<boolean>;
   changedPasswordAfterToken(JWTTimestamp: number): boolean;
 }
@@ -41,6 +42,18 @@ const userSchema = new mongoose.Schema<IUser>(
       default: 'user',
       enum: ['user', 'admin'],
     },
+    followers: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+      },
+    ],
+    followings: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+      },
+    ],
     password: {
       type: String,
       select: false,
@@ -55,9 +68,11 @@ const userSchema = new mongoose.Schema<IUser>(
       default: true,
       // select: false,
     },
-    refreshToken: {
+    refreshTokens: {
+      required: true,
       type: [String],
       default: [],
+      select: false,
     },
   },
   {
@@ -93,4 +108,13 @@ userSchema.pre(/^find/, function (this: Query<any, any>) {
   this.find({ active: mongoose.trusted({ $ne: false }) });
 });
 
+userSchema.pre(/^find/, function (this: Query<any, any>) {
+  this.populate({
+    path: 'followers',
+    select: 'name email avatar',
+  }).populate({
+    path: 'followings',
+    select: 'name email avatar',
+  });
+});
 export const User = mongoose.model<IUser>('User', userSchema);

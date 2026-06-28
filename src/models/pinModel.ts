@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
 
 const pinSchema = new mongoose.Schema(
   {
@@ -14,7 +14,7 @@ const pinSchema = new mongoose.Schema(
       maxLength: [500, 'A description cant exceed 500 characters'],
     },
     createdBy: {
-      type: mongoose.Schema.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: 'User',
       required: [true, 'a pin must have an author'],
     },

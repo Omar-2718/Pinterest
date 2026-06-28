@@ -17,5 +17,13 @@ export const loginZodSchema = z.object({
   }),
 });
 
+export const updateMeZodSchema = z.object({
+  body: z.object({
+    name: z.string().min(1).optional(),
+    // avatar: z.string().optional(),
+  }),
+});
+
 export type SignupInput = z.infer<typeof signupZodSchema>['body'];
 export type LoginInput = z.infer<typeof loginZodSchema>['body'];
+export type updateMeInput = z.infer<typeof updateMeZodSchema>['body'];

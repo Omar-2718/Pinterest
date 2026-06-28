@@ -35,7 +35,7 @@ const createTokenAndSendResponse = async (
   const accessToken = signAccessToken(user);
 
   // save refresh token
-  user.refreshToken.push(refreshToken);
+  user.refreshTokens.push(refreshToken);
   await user.save({ validateBeforeSave: false });
 
   // save cookie
@@ -48,7 +48,7 @@ const createTokenAndSendResponse = async (
 
   // remove sensitive data
   // user.password = undefined;
-  // user.refreshToken = [];
+  // user.refreshTokens = [];
 
   res.status(statusCode).json({
     status: 'success',
@@ -64,6 +64,7 @@ export const signup = async (
 ) => {
   const { avatar, email, name, password } = req.body;
   const newUser = await User.create({ avatar, email, name, password });
+  newUser.refreshTokens = [];
   await createTokenAndSendResponse(newUser, 201, res);
 };
 
@@ -74,7 +75,7 @@ export const login = async (
 ) => {
   const { email, password } = req.body;
 
-  const user = await User.findOne({ email }).select('+password');
+  const user = await User.findOne({ email }).select('+password +refreshTokens');
   if (!user || !user.password || !(await user.correctPassword(password, user.password))) {
     res.status(401).json({
       status: 'fail',
@@ -82,6 +83,7 @@ export const login = async (
     });
     return;
   }
+  // TODO: remove user logging in production
   await createTokenAndSendResponse(user, 200, res);
 };
 
@@ -117,14 +119,28 @@ export const refresh = async (req: Request, res: Response, next: NextFunction) =
 
     const user = await User.findOne({
       _id: decoded.id,
-      refreshToken: currentRefreshToken,
-    });
+      refreshTokens: currentRefreshToken,
+    }).select('+refreshTokens');
 
     if (!user) {
       return next(new AppError('Session revoked or user no longer exsists', 403));
     }
+    user.refreshTokens = user.refreshTokens.filter(
+      (token) => token !== currentRefreshToken
+    );
 
     const newAccessToken = signAccessToken(user);
+    const newRefreshToken = signRefreshToken(user);
+
+    user.refreshTokens.push(newRefreshToken);
+    await user.save({ validateBeforeSave: false });
+
+    res.cookie('refreshToken', newRefreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: Number(process.env.REFRESH_TOKEN_EXPIRES_IN) * 1000,
+    });
 
     res.status(200).json({
       status: 'success',
