@@ -3,6 +3,8 @@ import helmet from 'helmet';
 import AppError from './utils/appError';
 import globalErrorHandler from './controllers/errorController';
 import userRouter from './routes/userRoutes';
+import pinRouter from './routes/pinRoutes';
+import boardRouter from './routes/boardRoutes';
 import morgan from 'morgan';
 // import mongoSanitize from 'express-mongo-sanitize';
 import rateLimit from 'express-rate-limit';
@@ -35,6 +37,8 @@ app.use(morgan('dev'));
 mongoose.set('sanitizeFilter', true);
 
 app.use('/api/v1/users', userRouter);
+app.use('/api/v1/pins', pinRouter);
+app.use('/api/v1/boards', boardRouter);
 
 app.all('/{*any}', (req, res, next) => {
   console.log('hello');

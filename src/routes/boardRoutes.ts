@@ -1,5 +1,14 @@
 import express from 'express';
 import { protect } from '../controllers/authController';
+import {
+  createBoard,
+  deleteBoard,
+  getBoard,
+  getMyBoards,
+  updateBoard,
+  addPinToBoard,
+  removePinFromBoard,
+} from '../controllers/boardController';
 const router = express.Router();
 
 router.use(protect);
@@ -13,3 +22,5 @@ router.delete('/:id', deleteBoard);
 // Managing Pins inside Boards
 router.post('/:id/pins/:pinId', addPinToBoard);
 router.delete('/:id/pins/:pinId', removePinFromBoard);
+
+export default router;

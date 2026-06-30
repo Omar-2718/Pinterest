@@ -61,7 +61,7 @@ export const getFollowers = async (
   res: Response,
   next: NextFunction
 ) => {
-  const userQuery = User.findById(req.user?.id).populate({
+  const userQuery = User.findById(req.params.id).populate({
     path: 'followers',
     select: 'name avatar email',
   });
@@ -78,7 +78,7 @@ export const getFollowing = async (
   res: Response,
   next: NextFunction
 ) => {
-  const userQuery = User.findById(req.user?.id).populate({
+  const userQuery = User.findById(req.params.id).populate({
     path: 'followings',
     select: 'name avatar email',
   });

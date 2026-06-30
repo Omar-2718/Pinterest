@@ -1,14 +1,16 @@
 import mongoose, { Schema } from 'mongoose';
+import { Comment } from './commentModel';
 
 export interface IPin extends mongoose.Document {
   title: string;
   description?: string;
   createdBy: mongoose.Types.ObjectId;
   imageURL: string;
-  comments?: mongoose.Types.ObjectId[];
+  comments: mongoose.Types.ObjectId[];
   likedBy?: mongoose.Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
+  createComment(userId: mongoose.Types.ObjectId, text: string): Promise<void>;
 }
 
 const pinSchema = new mongoose.Schema(
@@ -42,9 +44,31 @@ const pinSchema = new mongoose.Schema(
       },
     ],
 
-    comments: [{ type: mongoose.Schema.ObjectId, ref: 'Comment' }],
+    comments: [{ type: Schema.Types.ObjectId, ref: 'Comment', default: [] }],
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+    methods: {
+      createComment: async function createComment(
+        this: IPin,
+        userId: string,
+        text: string
+      ) {
+        try {
+          const comment = await Comment.create({
+            text,
+            madeBy: userId as any,
+          });
+          this.comments.push(comment._id);
+          await this.save();
+          return comment;
+        } catch (error) {
+          console.error('Error creating comment:', error);
+          throw error;
+        }
+      },
+    },
+  }
 );
 
 export const Pin = mongoose.model<IPin>('Pin', pinSchema);

@@ -11,7 +11,12 @@ import {
   savePin,
   unsavePin,
   searchPins,
+  getPinLikes,
+  getSavedPins,
+  getPinComments,
+  addCommentToPin,
 } from '../controllers/pinController';
+import '../models/commentModel';
 import { validateRequest } from '../middlewares/validateRequest';
 import { createPinZodSchema } from '../schemas/pinSchema';
 const router = express.Router();
@@ -28,7 +33,14 @@ router.patch('/:id', updatePin);
 router.delete('/:id', deletePin);
 
 // Interactions on Pins
+router.get('/:id/save', getSavedPins); // Quick save/unsave to default profile
 router.post('/:id/save', savePin); // Quick save/unsave to default profile
 router.delete('/:id/save', unsavePin);
+
+router.get('/:id/like', getPinLikes);
 router.post('/:id/like', likePin);
 router.delete('/:id/like', unlikePin);
+
+router.get('/:id/comments', getPinComments); // Get comments for a pin
+router.post('/:id/comments', addCommentToPin); // Add a comment to a pin
+export default router;

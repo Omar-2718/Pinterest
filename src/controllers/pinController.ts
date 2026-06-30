@@ -19,7 +19,8 @@ export const getAllPins = async (req: AuthRequest, res: Response, next: NextFunc
 export const getPin = async (req: AuthRequest, res: Response, next: NextFunction) => {
   const pin = await Pin.findById(req.params.id).populate({
     path: 'comments',
-    select: 'text createdAt likedBy',
+    select: 'text createdAt madeBy',
+    populate: { path: 'madeBy', select: 'name avatar' },
   });
   if (!pin) {
     return next(new AppError('Pin not found', 404));
@@ -55,7 +56,7 @@ export const updatePin = async (
   }
 
   const pin = await Pin.findByIdAndUpdate(req.params.id, req.body, {
-    new: true,
+    returnDocument: 'after',
     runValidators: true,
   });
   res.status(200).json({
@@ -162,5 +163,80 @@ export const searchPins = async (req: AuthRequest, res: Response, next: NextFunc
   res.status(200).json({
     status: 'success',
     data: pins,
+  });
+};
+
+export const getPinLikes = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  const pin = await Pin.findById(req.params.id);
+  if (!pin) {
+    return next(new AppError('Pin not found', 404));
+  }
+  const query = Pin.findById(req.params.id).populate('likedBy', 'name avatar');
+  const result = await new ApiFeatures(query, req.query).paginate().query;
+  res.status(200).json({
+    status: 'success',
+    data: result.likedBy,
+  });
+};
+
+export const getSavedPins = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  const userTest = await User.findById(req.user?.id);
+  if (!userTest) {
+    return next(new AppError('User not found', 404));
+  }
+  const user = await User.findById(req.user?.id).populate({
+    path: 'savedPins',
+    select: 'title description imageURL createdBy',
+    populate: { path: 'createdBy', select: 'name avatar' },
+  });
+  res.status(200).json({
+    status: 'success',
+    data: user?.savedPins,
+  });
+};
+export const getPinComments = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  // TODO: make it one step
+  const pin = await Pin.findById(req.params.id);
+  if (!pin) {
+    return next(new AppError('Pin not found', 404));
+  }
+  // TODO: make it more efficent
+  const query = Pin.findById(req.params.id).populate({
+    path: 'comments',
+    select: 'text createdAt madeBy',
+    populate: { path: 'madeBy', select: 'name avatar' },
+  });
+  const result = await new ApiFeatures(query, req.query).paginate().query;
+  res.status(200).json({
+    status: 'success',
+    data: result.comments,
+  });
+};
+
+export const addCommentToPin = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  const pin = await Pin.findById(req.params.id);
+  if (!pin) {
+    return next(new AppError('Pin not found', 404));
+  }
+  const comment = await pin.createComment(req.user?.id as any, req.body.text);
+  res.status(201).json({
+    status: 'success',
+    data: comment,
   });
 };
