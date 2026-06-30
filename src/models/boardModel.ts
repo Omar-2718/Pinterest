@@ -4,8 +4,8 @@ export interface IBoard extends Document {
   name: string;
   description?: string;
   secret?: boolean;
-  createdBy: mongoose.Schema.Types.ObjectId;
-  pins: mongoose.Schema.Types.ObjectId[];
+  createdBy: mongoose.Types.ObjectId;
+  pins: mongoose.Types.ObjectId[];
 }
 
 const boardSchema = new mongoose.Schema(
@@ -34,9 +34,9 @@ const boardSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
-
-boardSchema.pre(/^find/, function (this: Query<any, IBoard>) {
-  this.populate('createdBy', 'name avatar');
-});
+// causes infinite loop
+// boardSchema.pre(/^find/, function (this: Query<any, IBoard>) {
+//   this.populate('createdBy', 'name avatar');
+// });
 
 export const Board = mongoose.model<IBoard>('Board', boardSchema);

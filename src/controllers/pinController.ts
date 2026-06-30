@@ -212,10 +212,10 @@ export const getPinComments = async (
   if (!pin) {
     return next(new AppError('Pin not found', 404));
   }
-  // TODO: make it more efficent
+  // TODO: make it more efficent for likedBy
   const query = Pin.findById(req.params.id).populate({
     path: 'comments',
-    select: 'text createdAt madeBy',
+    select: 'text createdAt madeBy likedBy',
     populate: { path: 'madeBy', select: 'name avatar' },
   });
   const result = await new ApiFeatures(query, req.query).paginate().query;
