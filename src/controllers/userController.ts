@@ -2,13 +2,18 @@ import { NextFunction, Request, Response } from 'express';
 import { AuthRequest } from '../types/express';
 import { User } from './../models/userModel';
 import { updateMeInput } from '../schemas/userSchema';
+import AppError from '../utils/appError';
+import ApiFeatures from '../utils/apiFeatures';
 export const getMe = async (req: AuthRequest, res: Response, next: NextFunction) => {
   // TODO: refresh token and anything with select: false still shows in user
   // because of pre find middleware that populates the user,
   //  so we need to remove the sensitive data before sending the response
+  console.log('hello first');
   const user = await User.findById(req.user?.id);
+  console.log('hello');
+
   if (!user) {
-    return next(new Error('User not found'));
+    return next(new AppError('User not found', 404));
   }
   return res.status(200).json({
     status: 'success',
@@ -34,7 +39,7 @@ export const updateMe = async (
     returnDocument: 'after',
   });
   if (!updatedUser) {
-    return next(new Error('User not found'));
+    return next(new AppError('User not found', 404));
   }
   return res.status(200).json({
     status: 'success',
@@ -56,20 +61,11 @@ export const getFollowers = async (
   res: Response,
   next: NextFunction
 ) => {
-  const page = parseInt(req.query.page as string) || 1;
-  let limit = parseInt(req.query.limit as string) || 10;
-  if (limit > 100) limit = 100;
-  // 10 10 10
-  // 0  10 20
-  let skip = (page - 1) * limit;
-  const user = await User.findById(req.user?.id).populate({
+  const userQuery = User.findById(req.user?.id).populate({
     path: 'followers',
     select: 'name avatar email',
-    options: {
-      limit: limit,
-      skip: skip,
-    },
   });
+  const user = await new ApiFeatures(userQuery, req.query).paginate().query;
 
   res.status(200).json({
     status: 'success',
@@ -82,19 +78,12 @@ export const getFollowing = async (
   res: Response,
   next: NextFunction
 ) => {
-  const page = parseInt(req.query.page as string) || 1;
-  let limit = parseInt(req.query.limit as string) || 10;
-  if (limit > 100) limit = 100;
-  let skip = (page - 1) * limit;
-
-  const user = await User.findById(req.user?.id).populate({
+  const userQuery = User.findById(req.user?.id).populate({
     path: 'followings',
     select: 'name avatar email',
-    options: {
-      limit: limit,
-      skip: skip,
-    },
   });
+  const user = await new ApiFeatures(userQuery, req.query).paginate().query;
+
   res.status(200).json({
     status: 'success',
     results: user?.followings.length || 0,
@@ -103,13 +92,13 @@ export const getFollowing = async (
 };
 
 export const followUser = async (req: AuthRequest, res: Response, next: NextFunction) => {
-  if (!req.params.id) return next(new Error('User id is required'));
+  if (!req.params.id) return next(new AppError('User id is required', 400));
   const userToFollow = await User.findById(req.params.id);
   const currentUser = await User.findById(req.user?.id);
 
-  if (!currentUser) return next(new Error('Current user not found'));
-  if (!userToFollow) return next(new Error('User not found'));
-
+  if (!currentUser) return next(new AppError('Current user not found', 404));
+  if (!userToFollow) return next(new AppError('User not found', 404));
+  console.log('hello');
   await Promise.all([
     User.findByIdAndUpdate(userToFollow._id, {
       $addToSet: { followers: currentUser._id },
@@ -118,6 +107,10 @@ export const followUser = async (req: AuthRequest, res: Response, next: NextFunc
       $addToSet: { followings: userToFollow._id },
     }),
   ]);
+  res.status(200).json({
+    status: 'success',
+    message: `You are now following ${userToFollow.name}`,
+  });
 };
 
 export const unfollowUser = async (
@@ -125,12 +118,12 @@ export const unfollowUser = async (
   res: Response,
   next: NextFunction
 ) => {
-  if (!req.params.id) return next(new Error('User id is required'));
+  if (!req.params.id) return next(new AppError('User id is required', 400));
   const userToUnfollow = await User.findById(req.params.id);
   const currentUser = await User.findById(req.user?.id);
 
-  if (!currentUser) return next(new Error('Current user not found'));
-  if (!userToUnfollow) return next(new Error('User not found'));
+  if (!currentUser) return next(new AppError('Current user not found', 404));
+  if (!userToUnfollow) return next(new AppError('User not found', 404));
   await Promise.all([
     User.findByIdAndUpdate(userToUnfollow?._id, {
       $pull: { followers: currentUser?._id },
@@ -139,4 +132,8 @@ export const unfollowUser = async (
       $pull: { followings: userToUnfollow?._id },
     }),
   ]);
+  res.status(200).json({
+    status: 'success',
+    message: `You have unfollowed ${userToUnfollow.name}`,
+  });
 };

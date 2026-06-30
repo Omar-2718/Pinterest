@@ -100,6 +100,7 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
       process.env.ACCESS_TOKEN_SECRET as string
     ) as jwt.JwtPayload;
     req.user = { id: decoded.id, role: decoded.role, email: decoded.email };
+    console.log('you shall pass', req.user);
     next();
   } catch (err) {
     return next(new AppError('Token invalid or expired', 403));

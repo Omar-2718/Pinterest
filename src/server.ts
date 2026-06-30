@@ -8,7 +8,20 @@ const port = process.env.PORT || 3000;
 
 // Connect to database
 try {
+  mongoose.connection.on('connected', () => {
+    console.log('✅ Mongoose connected successfully to DB');
+  });
+
+  mongoose.connection.on('error', (err) => {
+    console.error('❌ Mongoose connection error:', err);
+  });
+
+  mongoose.connection.on('disconnected', () => {
+    console.log('🔌 Mongoose disconnected');
+  });
   await mongoose.connect(db as string);
+
+  console.log('Database connection successful');
 } catch (err) {
   console.log(`Couldn't connect to database`);
   process.exit(1);

@@ -7,14 +7,17 @@ export interface IUser extends Document {
   email: string;
   avatar: string;
   role?: 'user' | 'admin';
-  followers: Types.ObjectId[];
-  followings: Types.ObjectId[];
+  followers?: Types.ObjectId[];
+  followings?: Types.ObjectId[];
+  savedPins?: Types.ObjectId[];
   password?: string;
   passwordResetToken?: string;
   passwordResetExpires?: Date;
   passwordLastChangedAt?: Date;
   active: boolean;
   refreshTokens: string[];
+  createdAt: Date;
+  updatedAt: Date;
   correctPassword(candidatePassword: string, correctPassword: string): Promise<boolean>;
   changedPasswordAfterToken(JWTTimestamp: number): boolean;
 }
@@ -54,6 +57,12 @@ const userSchema = new mongoose.Schema<IUser>(
         ref: 'User',
       },
     ],
+    savedPins: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'Pin',
+      },
+    ],
     password: {
       type: String,
       select: false,
@@ -76,6 +85,7 @@ const userSchema = new mongoose.Schema<IUser>(
     },
   },
   {
+    timestamps: true,
     methods: {
       changedPasswordAfterToken(JWTTimestamp: number): boolean {
         if (!this.passwordLastChangedAt) return false;
@@ -107,14 +117,15 @@ userSchema.pre(/^find/, function (this: Query<any, any>) {
   // because sanitzer removes it to protect against NoSQL injection
   this.find({ active: mongoose.trusted({ $ne: false }) });
 });
-
-userSchema.pre(/^find/, function (this: Query<any, any>) {
-  this.populate({
-    path: 'followers',
-    select: 'name email avatar',
-  }).populate({
-    path: 'followings',
-    select: 'name email avatar',
-  });
-});
+// This cause infinite loops because pre find itself to populate calls another pre find
+// so we need to explicitly populate the user in the controller instead of using pre find middleware
+// userSchema.pre(/^find/, function (this: Query<any, any>) {
+//   this.populate({
+//     path: 'followers',
+//     select: 'name email avatar',
+//   }).populate({
+//     path: 'followings',
+//     select: 'name email avatar',
+//   });
+// });
 export const User = mongoose.model<IUser>('User', userSchema);

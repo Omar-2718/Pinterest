@@ -1,0 +1,166 @@
+import { NextFunction, Response } from 'express';
+import { AuthRequest } from '../types/express';
+import { Pin } from '../models/pinModel';
+import ApiFeatures from '../utils/apiFeatures';
+import AppError from '../utils/appError';
+import { CreatePinInput, UpdatePinInput } from '../schemas/pinSchema';
+import { User } from '../models/userModel';
+export const getAllPins = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  const pins = await new ApiFeatures(
+    Pin.find({}).populate({ path: 'comments', select: 'text createdAt likedBy' }),
+    req.query
+  ).query;
+  res.status(200).json({
+    status: 'success',
+    data: pins,
+  });
+};
+
+export const getPin = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  const pin = await Pin.findById(req.params.id).populate({
+    path: 'comments',
+    select: 'text createdAt likedBy',
+  });
+  if (!pin) {
+    return next(new AppError('Pin not found', 404));
+  }
+  res.status(200).json({
+    status: 'success',
+    data: pin,
+  });
+};
+
+export const createPin = async (
+  req: AuthRequest<{}, {}, CreatePinInput>,
+  res: Response,
+  next: NextFunction
+) => {
+  const pin = await Pin.create({ ...req.body, createdBy: req.user?.id });
+  res.status(201).json({
+    status: 'success',
+    data: pin,
+  });
+};
+
+export const updatePin = async (
+  req: AuthRequest<{ id: string }, {}, UpdatePinInput>,
+  res: Response,
+  next: NextFunction
+) => {
+  if (!req.params.id) return next(new AppError('Pin ID is required', 400));
+  const madeBy = (await Pin.findById(req.params.id))?.createdBy;
+
+  if (!madeBy || madeBy.toString() !== req.user?.id) {
+    return next(new AppError('You are not the owner of this pin', 403));
+  }
+
+  const pin = await Pin.findByIdAndUpdate(req.params.id, req.body, {
+    new: true,
+    runValidators: true,
+  });
+  res.status(200).json({
+    status: 'success',
+    data: pin,
+  });
+};
+
+export const deletePin = async (
+  req: AuthRequest<{ id: string }>,
+  res: Response,
+  next: NextFunction
+) => {
+  if (!req.params.id) return next(new AppError('Pin ID is required', 400));
+  const madeBy = (await Pin.findById(req.params.id))?.createdBy;
+
+  if (!madeBy || madeBy.toString() !== req.user?.id) {
+    return next(new AppError('You are not the owner of this pin', 403));
+  }
+
+  const pin = await Pin.findByIdAndDelete(req.params.id);
+  res.status(200).json({
+    status: 'success',
+    data: pin,
+  });
+};
+
+export const likePin = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  if (!req.params.id) return next(new AppError('Pin ID is required', 400));
+  if (!(await Pin.findById(req.params.id))) {
+    return next(new AppError('Pin not found', 404));
+  }
+  const pin = await Pin.findByIdAndUpdate(
+    req.params.id,
+    { $addToSet: { likedBy: req.user?.id } },
+    { new: true }
+  );
+  // TODO: remove data from response to avoid sending large data back to the client
+  res.status(200).json({
+    status: 'success',
+    data: pin,
+  });
+};
+
+export const unlikePin = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  if (!req.params.id) return next(new AppError('Pin ID is required', 400));
+  if (!(await Pin.findById(req.params.id))) {
+    return next(new AppError('Pin not found', 404));
+  }
+  const pin = await Pin.findByIdAndUpdate(
+    req.params.id,
+    { $pull: { likedBy: req.user?.id } },
+    { new: true }
+  );
+  // TODO: remove data from response to avoid sending large data back to the client
+  res.status(200).json({
+    status: 'success',
+    data: pin,
+  });
+};
+
+export const savePin = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  if (!req.params.id) return next(new AppError('Pin ID is required', 400));
+  if (!(await Pin.findById(req.params.id))) {
+    return next(new AppError('Pin not found', 404));
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.user?.id,
+    { $addToSet: { savedPins: req.params.id } },
+    { new: true }
+  );
+  res.status(200).json({
+    status: 'success',
+    data: user,
+  });
+};
+
+export const unsavePin = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  if (!req.params.id) return next(new AppError('Pin ID is required', 400));
+  if (!(await Pin.findById(req.params.id))) {
+    return next(new AppError('Pin not found', 404));
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.user?.id,
+    { $pull: { savedPins: req.params.id } },
+    { new: true }
+  );
+  res.status(200).json({
+    status: 'success',
+    data: user,
+  });
+};
+
+export const searchPins = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  const { query } = req.query;
+  if (!query || typeof query !== 'string') {
+    return next(new AppError('Query is required', 400));
+  }
+  const pins = await Pin.find({
+    $text: { $search: query },
+  });
+  res.status(200).json({
+    status: 'success',
+    data: pins,
+  });
+};

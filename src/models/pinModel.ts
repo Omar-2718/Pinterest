@@ -1,5 +1,16 @@
 import mongoose, { Schema } from 'mongoose';
 
+export interface IPin extends mongoose.Document {
+  title: string;
+  description?: string;
+  createdBy: mongoose.Types.ObjectId;
+  imageURL: string;
+  comments?: mongoose.Types.ObjectId[];
+  likedBy?: mongoose.Types.ObjectId[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 const pinSchema = new mongoose.Schema(
   {
     title: {
@@ -24,9 +35,16 @@ const pinSchema = new mongoose.Schema(
       maxLength: [100, 'A url cant exceed 100 characters'],
       required: true,
     },
+    likedBy: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+      },
+    ],
+
     comments: [{ type: mongoose.Schema.ObjectId, ref: 'Comment' }],
   },
   { timestamps: true }
 );
 
-export const Pin = mongoose.model('Pin', pinSchema);
+export const Pin = mongoose.model<IPin>('Pin', pinSchema);
