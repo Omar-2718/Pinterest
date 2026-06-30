@@ -11,6 +11,7 @@ import rateLimit from 'express-rate-limit';
 import hpp from 'hpp';
 import cookieParser from 'cookie-parser';
 import mongoose from 'mongoose';
+import csrf from 'csurf';
 const app = express();
 
 // Security
@@ -30,6 +31,7 @@ app.use(
 );
 
 app.use(cookieParser());
+app.use(csrf({ cookie: true }));
 
 app.use(morgan('dev'));
 
