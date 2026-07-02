@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { api } from '../services/api';
-import { ArrowLeft, ImageIcon, Loader } from 'lucide-react';
+import { ArrowLeft, UploadCloud } from 'lucide-react';
 
 interface CreatePinProps {
   onBack: () => void;
@@ -9,26 +9,39 @@ interface CreatePinProps {
 
 export default function CreatePin({ onBack, onPinCreated }: CreatePinProps) {
   const [title, setTitle] = useState('');
-  const [imageURL, setImageURL] = useState('');
   const [description, setDescription] = useState('');
+  const [file, setFile] = useState<File | null>(null);
+  const [previewURL, setPreviewURL] = useState<string | null>(null);
+  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [previewError, setPreviewError] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    if (selectedFile) {
+      setFile(selectedFile);
+      setPreviewURL(URL.createObjectURL(selectedFile));
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
     if (!title.trim()) { setError('Title is required'); return; }
-    if (!imageURL.trim()) { setError('Image URL is required'); return; }
+    if (!file) { setError('An image file is required'); return; }
 
     setLoading(true);
     try {
-      await api.pins.create({
-        title: title.trim(),
-        imageURL: imageURL.trim(),
-        description: description.trim() || undefined,
-      });
+      const fd = new FormData();
+      fd.append('title', title.trim());
+      if (description.trim()) {
+        fd.append('description', description.trim());
+      }
+      fd.append('image', file);
+
+      await api.pins.create(fd);
       onPinCreated();
     } catch (err: any) {
       setError(err.message || 'Failed to create pin');
@@ -47,38 +60,36 @@ export default function CreatePin({ onBack, onPinCreated }: CreatePinProps) {
       </div>
 
       <div className="create-pin-layout">
-        {/* Image preview */}
-        <div className="create-pin-preview">
-          {imageURL && !previewError ? (
+        {/* Image upload area */}
+        <div 
+          className="create-pin-preview" 
+          onClick={() => fileInputRef.current?.click()}
+          style={{ cursor: 'pointer' }}
+        >
+          {previewURL ? (
             <img
-              src={imageURL}
+              src={previewURL}
               alt="Preview"
               className="create-pin-preview-img"
-              onError={() => setPreviewError(true)}
             />
           ) : (
             <div className="create-pin-placeholder">
-              <ImageIcon size={40} />
-              <p>{previewError ? 'Could not load image URL' : 'Paste an image URL to preview'}</p>
+              <UploadCloud size={40} />
+              <p>Click to upload an image</p>
+              <small style={{ color: 'var(--color-text-secondary)' }}>JPG, PNG, WEBP</small>
             </div>
           )}
+          <input
+            type="file"
+            ref={fileInputRef}
+            style={{ display: 'none' }}
+            accept="image/jpeg, image/png, image/webp"
+            onChange={handleFileChange}
+          />
         </div>
 
         {/* Form */}
         <form className="create-pin-form" onSubmit={handleSubmit}>
-
-          <div className="form-group">
-            <label className="form-label">Image URL *</label>
-            <input
-              className="form-input"
-              type="url"
-              placeholder="https://example.com/photo.jpg"
-              value={imageURL}
-              onChange={e => { setImageURL(e.target.value); setPreviewError(false); }}
-              required
-            />
-          </div>
-
           <div className="form-group">
             <label className="form-label">Title *</label>
             <input
@@ -99,25 +110,18 @@ export default function CreatePin({ onBack, onPinCreated }: CreatePinProps) {
               placeholder="Tell everyone what this pin is about…"
               value={description}
               onChange={e => setDescription(e.target.value)}
-              rows={4}
+              rows={5}
               maxLength={500}
-              style={{ resize: 'vertical' }}
             />
           </div>
 
-          {error && <div className="auth-error">{error}</div>}
+          {error && <div className="auth-error" style={{ marginBottom: 16 }}>{error}</div>}
 
-          <button
-            type="submit"
-            className="auth-submit-btn"
-            disabled={loading || !title.trim() || !imageURL.trim()}
-          >
-            {loading ? (
-              <><Loader size={16} className="spin" /> Publishing…</>
-            ) : (
-              'Publish Pin'
-            )}
-          </button>
+          <div style={{ marginTop: 'auto', textAlign: 'right' }}>
+            <button type="submit" className="auth-submit-btn" disabled={loading}>
+              {loading ? 'Creating…' : 'Save Pin'}
+            </button>
+          </div>
         </form>
       </div>
     </div>

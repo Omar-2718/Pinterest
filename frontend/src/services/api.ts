@@ -199,9 +199,9 @@ export const api = {
     getById: (id: string) =>
       GET<{ status: string; data: Pin }>(`/api/v1/pins/${id}`),
 
-    /** POST /api/v1/pins  (protected) body: { title, imageURL, description? } */
-    create: (body: { title: string; imageURL: string; description?: string }) =>
-      POST<{ status: string; data: Pin }>('/api/v1/pins', body),
+    /** POST /api/v1/pins  (protected) accepts FormData with title, description, and image file */
+    create: (formData: FormData) =>
+      POST<{ status: string; data: Pin }>('/api/v1/pins', formData),
 
     /** PATCH /api/v1/pins/:id  (owner only) */
     update: (id: string, body: { description?: string }) =>

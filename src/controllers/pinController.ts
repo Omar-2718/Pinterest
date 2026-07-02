@@ -17,11 +17,16 @@ export const getAllPins = async (req: AuthRequest, res: Response, next: NextFunc
 };
 
 export const getPin = async (req: AuthRequest, res: Response, next: NextFunction) => {
-  const pin = await Pin.findById(req.params.id).populate({
-    path: 'comments',
-    select: 'text createdAt madeBy',
-    populate: { path: 'madeBy', select: 'name avatar' },
-  });
+  const pin = await Pin.findById(req.params.id)
+    .populate({
+      path: 'createdBy',
+      select: 'name avatar email',
+    })
+    .populate({
+      path: 'comments',
+      select: 'text createdAt madeBy',
+      populate: { path: 'madeBy', select: 'name avatar' },
+    });
   if (!pin) {
     return next(new AppError('Pin not found', 404));
   }
@@ -36,7 +41,11 @@ export const createPin = async (
   res: Response,
   next: NextFunction
 ) => {
-  const pin = await Pin.create({ ...req.body, createdBy: req.user?.id });
+  if (!req.file) {
+    next(new AppError('Image file is required', 400));
+  }
+  const imageURL = `/uploads/pins/${req.user?.id}/${req.file?.filename}`;
+  const pin = await Pin.create({ ...req.body, imageURL, createdBy: req.user?.id });
   res.status(201).json({
     status: 'success',
     data: pin,

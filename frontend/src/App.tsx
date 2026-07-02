@@ -243,7 +243,7 @@ export default function App() {
 export function AvatarImg({ user, size = 40 }: { user: User; size?: number }) {
   const [err, setErr] = useState(false);
   const isDefault = !user.avatar || user.avatar === 'default.jpg';
-  const src = isDefault ? null : `/uploads/users/${user._id}/${user.avatar}`;
+  const src = isDefault ? null : user.avatar;
 
   if (!src || err) {
     return (

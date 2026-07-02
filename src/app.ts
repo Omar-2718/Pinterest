@@ -17,6 +17,8 @@ const app = express();
 // Security
 app.use(helmet());
 app.use(express.json({ limit: '10kb' }));
+app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+app.use('/uploads', express.static('uploads'));
 app.use(hpp());
 // app.use(cors({
 //   origin: 'http://localhost:3000', // Replace with production frontend URL
@@ -31,7 +33,7 @@ app.use(
 );
 
 app.use(cookieParser());
-app.use(csrf({ cookie: true }));
+// app.use(csrf({ cookie: true }));
 
 app.use(morgan('dev'));
 

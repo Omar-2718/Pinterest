@@ -15,29 +15,7 @@ import {
   loginZodSchema,
   updateMeZodSchema,
 } from './../schemas/userSchema';
-import multer from 'multer';
-import path from 'path';
-import { AuthRequest } from '../types/express';
-import AppError from '../utils/appError';
-import fs from 'fs';
-
-const storage = multer.diskStorage({
-  destination: (req, file, callback) => {
-    const authReq = req as AuthRequest;
-    if (!authReq.user) return callback(new AppError('User not authenticated', 401), '');
-    fs.mkdirSync(path.resolve('uploads', 'users', `${authReq.user.id}`), {
-      recursive: true,
-    });
-    callback(null, path.resolve('uploads', 'users', `${authReq.user.id}`));
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase();
-    const allowed = ['.jpg', '.png', '.jpeg', '.webp'];
-    if (!allowed.includes(ext)) return cb(new AppError('Unallowed file format', 415), '');
-    cb(null, Date.now() + ext);
-  },
-});
-const upload = multer({ storage: storage });
+import upload from '../utils/upload';
 const router = express.Router();
 
 router.post('/login', validateRequest(loginZodSchema), login);

@@ -10,10 +10,11 @@ export const createPinZodSchema = z.object({
       .string()
       .max(500, 'A description cant exceed 500 characters')
       .optional(),
-    imageURL: z
-      .string()
-      .min(1, 'imageURL is required')
-      .max(100, 'A url cant exceed 100 characters'),
+    // imageURL: z
+    //   .string()
+    //   .min(1, 'imageURL is required')
+    //   .max(100, 'A url cant exceed 100 characters'),
+    // we dont need url anymore since we are uploading the image and storing it in the server
   }),
 });
 

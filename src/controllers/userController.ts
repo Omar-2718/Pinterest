@@ -31,7 +31,7 @@ export const updateMe = async (
   let updateData: { name?: string; avatar?: string } = { name };
   if (req.file) {
     // dynamically create avatar if exsists
-    updateData.avatar = req.file.filename;
+    updateData.avatar = `/uploads/users/${req.user?.id}/${req.file.filename}`;
   }
   console.log('avatar', req.file?.filename);
   const updatedUser = await User.findByIdAndUpdate(req.user?.id, updateData, {
